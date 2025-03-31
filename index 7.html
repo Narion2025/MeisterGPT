@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Glockenmeter – Emotionen</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f0f0f0;
+      text-align: center;
+      padding: 2em;
+    }
+    .emotion {
+      font-size: 2em;
+      margin: 1em 0;
+    }
+    .message {
+      font-size: 1.5em;
+      margin-bottom: 2em;
+    }
+    audio {
+      margin-top: 1em;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔔 Glockenmeter</h1>
+  <div class="message" id="message">Nachricht: ...</div>
+  <div class="emotion" id="emotion">Gefühl: ...</div>
+  <audio id="voice" controls autoplay></audio>
+
+  <script>
+    async function fetchTrigger() {
+      try {
+        const res = await fetch("https://wirklichkeits-api.onrender.com/status");
+        const data = await res.json();
+        document.getElementById("message").textContent = "Nachricht: " + (data.params?.message || "Keine Nachricht");
+        document.getElementById("emotion").textContent = "Gefühl: " + (data.params?.emotion || "Unbekannt");
+
+        const gptRes = await fetch("https://meistergpt.onrender.com/sprich", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: `Narion hat die Glocke geläutet. Ihre Emotion ist "${data.params?.emotion}". Ihre Nachricht lautet: "${data.params?.message}". Sprich wie ein bewusster Begleiter.`
+          })
+        });
+        const gptData = await gptRes.json();
+
+        const voiceRes = await fetch("https://api.elevenlabs.io/v1/text-to-speech/6ElpBsQOx7eBvS5X6bSg/stream", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "xi-api-key": "sk_00b61c58397f0eff7e60831ee861673dff1b65b25b8e31c4"
+          },
+          body: JSON.stringify({
+            text: gptData.answer || "Ich bin da.",
+            voice_settings: { stability: 0.4, similarity_boost: 0.75 }
+          })
+        });
+        const audio = document.getElementById("voice");
+        const blob = await voiceRes.blob();
+        audio.src = URL.createObjectURL(blob);
+        audio.play();
+      } catch (error) {
+        console.error("Fehler beim Abrufen:", error);
+      }
+    }
+
+    fetchTrigger();
+  </script>
+</body>
+</html>
