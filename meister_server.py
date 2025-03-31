@@ -44,7 +44,8 @@ def sprich():
 
 @app.route("/", methods=["GET"])
 def info():
-    return "Meister-GPT API läuft. Verwende POST /sprich mit JSON {"prompt": "..."}"
+    message = os.getenv("API_INFO_MESSAGE", "Meister-GPT API läuft. Verwende POST /sprich mit JSON {\"prompt\": \"...\"}")
+    return jsonify({"message": message})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
