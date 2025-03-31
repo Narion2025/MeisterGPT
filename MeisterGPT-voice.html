@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MeisterGPT Interface</title>
+  <style>
+    body { font-family: sans-serif; background: #f4f4f4; padding: 2rem; }
+    #output { margin-top: 1.5rem; padding: 1rem; background: white; border-radius: 8px; min-height: 60px; }
+    button { padding: 0.5rem 1rem; font-size: 1rem; margin-top: 1rem; }
+    audio { margin-top: 1rem; display: block; }
+  </style>
+</head>
+<body>
+  <h1>MeisterGPT – Stimme von Ben</h1>
+  <label for="prompt">Frage an den Meister:</label>
+  <textarea id="prompt" rows="4" cols="50" placeholder="Was bewegt dich, Narion?"></textarea><br>
+  <button onclick="sendePrompt()">Sprechen mit dem Meister</button>
+
+  <div id="output"></div>
+  <audio id="player" controls></audio>
+
+  <script>
+    async function sendePrompt() {
+      const prompt = document.getElementById("prompt").value;
+      const output = document.getElementById("output");
+      const audio = document.getElementById("player");
+
+      output.innerText = "⏳ Der Meister denkt...";
+      try {
+        const res = await fetch("https://meistergpt.onrender.com/sprich", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt })
+        });
+
+        const data = await res.json();
+        output.innerText = `🗣️ ${data.response}`;
+
+        // Audio laden
+        audio.src = data.audio_url;
+        audio.play();
+      } catch (e) {
+        output.innerText = "Fehler: Der Meister konnte nicht sprechen.";
+        console.error(e);
+      }
+    }
+  </script>
+</body>
+</html>
