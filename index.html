@@ -1,0 +1,45 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Meister-GPT Interface</title>
+</head>
+<body style="font-family:sans-serif; max-width:600px; margin: 40px auto;">
+  <h1>🎓 Meister-GPT</h1>
+  <p>Stelle deine Frage:</p>
+  <textarea id="prompt" rows="4" style="width:100%;"></textarea>
+  <br><br>
+  <button onclick="senden()">Senden</button>
+  <p><strong>Antwort:</strong></p>
+  <div id="antwort" style="white-space: pre-wrap; margin-bottom: 20px;"></div>
+  <audio id="audio" controls style="width:100%; display:none;"></audio>
+
+  <script>
+    async function senden() {
+      const prompt = document.getElementById("prompt").value;
+      const antwortFeld = document.getElementById("antwort");
+      const audio = document.getElementById("audio");
+
+      antwortFeld.innerText = "⏳ Meister denkt...";
+      audio.style.display = "none";
+
+      const res = await fetch("https://meistergpt.onrender.com/sprich", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt })
+      });
+
+      const data = await res.json();
+      antwortFeld.innerText = data.text || "Fehler bei der Antwort.";
+
+      if (data.audio_url) {
+        audio.src = data.audio_url;
+        audio.style.display = "block";
+        audio.play();
+      }
+    }
+  </script>
+</body>
+</html>
