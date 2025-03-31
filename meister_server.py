@@ -1,11 +1,15 @@
+from flask import Flask, request, jsonify
 import os
-from flask import Flask, request, send_file, jsonify
-import requests
+import requests  # Import für HTTP-Anfragen
+from elevenlabs import generate, save, set_api_key
 
 app = Flask(__name__)
 
-ELEVEN_API_KEY = os.getenv("ELEVEN_API_KEY", "sk_00b61c58397f0eff7e60831ee861673dff1b65b25b8e31c4")
-VOICE_ID = os.getenv("VOICE_ID", "ur39JFtQKjsZgv7ZF8CO")
+# API-Schlüssel aus Umgebungsvariablen laden
+ELEVEN_API_KEY = os.getenv("ELEVEN_API_KEY")
+set_api_key(ELEVEN_API_KEY)
+
+VOICE_ID = os.getenv("VOICE_ID", "6ElpBsQOx7eBvS5X6bSg")  # Meister
 AUDIO_FILE = "output.mp3"
 
 def generate_speech(text):
@@ -34,18 +38,18 @@ def generate_speech(text):
 def sprich():
     data = request.get_json()
     prompt = data.get("prompt", "")
+
     if not prompt:
         return jsonify({"error": "Kein Prompt übergeben"}), 400
-    success = generate_speech(prompt)
-    if success:
-        return send_file(AUDIO_FILE, mimetype="audio/mpeg")
-    else:
-        return jsonify({"error": "Text-to-Speech fehlgeschlagen"}), 500
 
-@app.route("/", methods=["GET"])
-def info():
-    message = os.getenv("API_INFO_MESSAGE", "Meister-GPT API läuft. Verwende POST /sprich mit JSON {\"prompt\": \"...\"}")
-    return jsonify({"message": message})
+    try:
+        success = generate_speech(prompt)
+        if success:
+            return jsonify({"status": "OK", "message": "Audio generiert", "file": AUDIO_FILE}), 200
+        else:
+            return jsonify({"error": "Text-to-Speech fehlgeschlagen"}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    app.run(debug=True, port=5000)

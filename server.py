@@ -1,25 +1,53 @@
+import os
 from flask import Flask, request, jsonify
-import logging
-import uuid
+from elevenlabs import generate, play, save, set_api_key
+from dotenv import load_dotenv
 
+# .env laden
+load_dotenv()
+
+# API-Key und Voice-IDs
+set_api_key(os.getenv("ELEVENLABS_API_KEY"))
+VOICE_ID_MEISTER = os.getenv("VOICE_ID_MEISTER")
+VOICE_ID_NARION = os.getenv("VOICE_ID_NARION")
+
+# Flask App
 app = Flask(__name__)
 
-logging.basicConfig(filename='glocken.log', level=logging.INFO)
+def generate_speech(text, speaker):
+    if speaker == "meister":
+        voice_id = VOICE_ID_MEISTER
+    elif speaker == "narion":
+        voice_id = VOICE_ID_NARION
+    else:
+        return False
 
-@app.route('/')
+    try:
+        audio = generate(text=text, voice=voice_id)
+        save(audio, "output.mp3")
+        return True
+    except Exception as e:
+        print("❌ Fehler bei der Sprachausgabe:", e)
+        return False
+
+@app.route("/")
 def home():
-    return 'Glockenmeter läuft!'
+    return jsonify({"message": "Meister-GPT API läuft. Verwende POST /sprich mit JSON {'prompt': '...', 'speaker': 'meister' oder 'narion'}"})
 
-@app.route('/sprich', methods=['POST'])
+@app.route("/sprich", methods=["POST"])
 def sprich():
-    prompt = request.json.get('prompt', '')
-    logging.info(f"Empfangenes Prompt: {prompt}")
+    data = request.get_json()
+    prompt = data.get("prompt", "")
+    speaker = data.get("speaker", "").lower()
 
-    # Simulierte Antwort (in echt würde GPT & ElevenLabs hier eingebunden)
-    audio_url = f"https://dummy-audio-url.com/audio-{uuid.uuid4()}.mp3"
-    logging.info(f"Audio erzeugt: {audio_url}")
+    if not prompt or speaker not in ["meister", "narion"]:
+        return jsonify({"error": "Ungültiger Prompt oder Sprechername fehlt"}), 400
 
-    return jsonify({ "audio_url": audio_url })
+    success = generate_speech(prompt, speaker)
+    if success:
+        return jsonify({"status": "ok", "message": f"Sprachausgabe für {speaker} erzeugt."})
+    else:
+        return jsonify({"status": "fehler", "message": "Sprachausgabe fehlgeschlagen."}), 500
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
+if __name__ == "__main__":
+    app.run(debug=True)
